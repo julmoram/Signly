@@ -18,7 +18,6 @@ Tambien incluye una pestana **Ensenar** para guardar muestras desde la camara di
 Desde la raiz del proyecto:
 
 ```powershell
-cd C:\Users\elias\OneDrive\Documentos\Integrador\Signly
 .\start-signly.ps1
 ```
 
