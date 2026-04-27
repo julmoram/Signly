@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CameraFeed } from './components/CameraFeed'
+import { TeachPanel } from './components/TeachPanel'
 import { TranslationPanel } from './components/TranslationPanel'
 import { TTSControls } from './components/TTSControls'
 import { useCamera } from './hooks/useCamera'
 import { usePredict } from './hooks/usePredict'
 
-// Tiempo mínimo (ms) entre que se agrega la misma seña a la oración
-const DEBOUNCE_MS = 1200
+const DEBOUNCE_MS = 450
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState('translate')
   const [isActive, setIsActive] = useState(false)
   const [sentence, setSentence] = useState([])
   const [history, setHistory] = useState([])
@@ -17,11 +18,10 @@ export default function App() {
   const { videoRef, canvasRef, ready, error, captureFrame } = useCamera()
   const { result, confidence, loading } = usePredict({
     captureFrame,
-    active: isActive && ready,
-    interval: 800,
+    active: activeTab === 'translate' && isActive && ready,
+    interval: 260,
   })
 
-  // Agrega la seña a la oración con debounce para evitar repeticiones
   useEffect(() => {
     if (!result) return
     const now = Date.now()
@@ -32,7 +32,14 @@ export default function App() {
     setSentence((prev) => [...prev, result])
     setHistory((prev) => [
       ...prev,
-      { text: result, time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) },
+      {
+        text: result,
+        time: new Date().toLocaleTimeString('es-MX', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+      },
     ])
   }, [result])
 
@@ -40,22 +47,38 @@ export default function App() {
 
   const handleClear = useCallback(() => {
     setSentence([])
+    setHistory([])
     setIsActive(false)
   }, [])
 
+  const modeLabel = activeTab === 'translate' ? (isActive ? 'traduciendo' : 'en espera') : 'modo ensenar'
+
   return (
     <div className="app">
-      {/* Top bar */}
       <header className="topbar">
         <div className="logo">Signly</div>
+
+        <div className="tabs">
+          <button
+            className={`tab-btn ${activeTab === 'translate' ? 'active' : ''}`}
+            onClick={() => setActiveTab('translate')}
+          >
+            Traducir
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'teach' ? 'active' : ''}`}
+            onClick={() => setActiveTab('teach')}
+          >
+            Ensenar
+          </button>
+        </div>
+
         <div className="status">
           <span className={`status-dot ${ready ? 'on' : ''}`} />
-          {ready ? (isActive ? 'traduciendo' : 'en espera') : 'iniciando cámara'}
+          {ready ? modeLabel : 'iniciando camara'}
         </div>
-        <div className="logo-sub">LSM · v0.1</div>
       </header>
 
-      {/* Main */}
       <main className="main">
         <CameraFeed
           videoRef={videoRef}
@@ -64,19 +87,30 @@ export default function App() {
           error={error}
           isActive={isActive}
           onToggle={handleToggle}
+          showToggle={activeTab === 'translate'}
         />
-        <TranslationPanel
-          result={result}
-          confidence={confidence}
-          loading={loading}
-          sentence={sentence}
-          history={history}
-        />
+
+        {activeTab === 'translate' ? (
+          <TranslationPanel
+            result={result}
+            confidence={confidence}
+            loading={loading}
+            sentence={sentence}
+            history={history}
+          />
+        ) : (
+          <TeachPanel ready={ready} captureFrame={captureFrame} />
+        )}
       </main>
 
-      {/* Bottom bar */}
       <footer className="footer">
-        <TTSControls sentence={sentence} onClear={handleClear} />
+        {activeTab === 'translate' ? (
+          <TTSControls history={history} onClear={handleClear} />
+        ) : (
+          <div className="teach-footer-note">
+            Las muestras se guardan en datasets/manual/&lt;palabra&gt;
+          </div>
+        )}
       </footer>
     </div>
   )

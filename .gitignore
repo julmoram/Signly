@@ -1,0 +1,10 @@
+node_modules/
+dist/
+
+.venv/
+.venv-lstm/
+__pycache__/
+*.pyc
+
+# Datos de entrenamiento capturados localmente
+datasets/manual/

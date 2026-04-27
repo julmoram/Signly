@@ -3,7 +3,7 @@ import { predict } from '../services/api'
 
 // Llama a /predict cada `interval` ms mientras `active` sea true.
 // Retorna: { result, confidence, loading, error }
-export function usePredict({ captureFrame, active = true, interval = 800 }) {
+export function usePredict({ captureFrame, active = true, interval = 260 }) {
   const [result, setResult] = useState(null)
   const [confidence, setConfidence] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -36,6 +36,8 @@ export function usePredict({ captureFrame, active = true, interval = 800 }) {
       clearInterval(timerRef.current)
       return
     }
+    // Primer frame inmediato para no esperar el primer intervalo.
+    runOnce()
     timerRef.current = setInterval(runOnce, interval)
     return () => clearInterval(timerRef.current)
   }, [active, interval, runOnce])

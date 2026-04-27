@@ -1,155 +1,115 @@
-# Signly — Frontend
+# Signly
 
-Interfaz web del traductor de lengua de señas. Construida con **React + Vite**. Se comunica con el backend FastAPI para enviar frames de cámara y recibir la seña detectada.
+App web para reconocimiento de lenguaje de senas con:
+- Frontend: React + Vite
+- Backend: FastAPI
+- Modelo: LSTM (`action.h5`)
 
----
+Tambien incluye una pestana **Ensenar** para guardar muestras desde la camara directo en `datasets/manual/`.
 
-## Requisitos
+## 1) Requisitos
 
-- Node.js 18+
-- npm 9+
+- Windows + PowerShell
+- Python 3.12 instalado (`py -3.12`)
+- Node.js (para frontend)
 
----
+## 2) Levantar la app
 
-## Instalación
+Desde la raiz del proyecto:
 
-```bash
-npm install
+```powershell
+cd C:\Users\elias\OneDrive\Documentos\Integrador\Signly
+.\start-signly.ps1
 ```
 
----
+Eso abre:
+- Backend: `http://127.0.0.1:8000`
+- Frontend: `http://localhost:5173`
 
-## Correr en desarrollo
+Si necesitas instalar dependencias:
 
-```bash
-npm run dev
+```powershell
+.\start-signly.ps1 -InstallDeps
 ```
 
-Abre `http://localhost:5173` en el navegador.
+## 3) Ensenar palabras desde la app
 
----
+1. Abre la pestana **Ensenar**.
+2. Escribe la palabra (ejemplo: `como` o `estas`).
+3. Usa `Capturar 1` o `Iniciar lote`.
+4. Se guardan imagenes en:
 
-## Variables de entorno
-
-Crea un archivo `.env` en la raíz del proyecto (ya viene uno por defecto):
-
-| Variable | Valores | Descripción |
-|---|---|---|
-| `VITE_MOCK` | `true` / `false` | `true` = respuestas simuladas sin backend. `false` = conecta al servidor FastAPI. |
-
-### Modo mock (sin backend)
-
-```env
-VITE_MOCK=true
+```text
+datasets/manual/<palabra_normalizada>/*.jpg
 ```
 
-El frontend simula detecciones con palabras de prueba cada 800ms. Útil para desarrollar la UI sin depender del backend.
+Ejemplo:
 
-### Modo real (con backend)
-
-```env
-VITE_MOCK=false
+```text
+datasets/manual/como_estas/20260426_220000_123456.jpg
 ```
 
-Requiere que el servidor FastAPI esté corriendo en `http://localhost:8000`.
+## 4) Entrenar el LSTM con tus lotes
 
----
+Ejecuta:
 
-## Estructura de archivos
-
-```
-frontend/
-├── index.html
-├── vite.config.js          # Proxy hacia FastAPI en :8000
-├── package.json
-├── .env                    # Variables de entorno (no subir a git)
-├── .env.example            # Plantilla de variables
-└── src/
-    ├── main.jsx            # Punto de entrada React
-    ├── App.jsx             # Componente raíz + estado global
-    ├── index.css           # Design system completo
-    ├── components/
-    │   ├── CameraFeed.jsx       # Stream de video + overlay de estado
-    │   ├── TranslationPanel.jsx # Seña actual, oración e historial
-    │   └── TTSControls.jsx      # Botón reproducir + velocidad
-    ├── hooks/
-    │   ├── useCamera.js    # Acceso a getUserMedia + captureFrame()
-    │   └── usePredict.js   # Polling al endpoint /predict cada 800ms
-    └── services/
-        └── api.js          # Cliente HTTP con fallback a mock
+```powershell
+& .\.venv-lstm\Scripts\python.exe .\scripts\train_from_manual.py
 ```
 
----
+Por defecto el script:
+- Lee `datasets/manual/`
+- Usa secuencias de 30 frames
+- Entrena LSTM
+- Guarda modelo en `external/ActionDetectionforSignLanguage/action.h5`
+- Guarda etiquetas en `external/ActionDetectionforSignLanguage/action_labels.json`
 
-## Endpoints del backend que consume
+### Opciones utiles
 
-### `POST /predict`
-
-Recibe un frame de la cámara y devuelve la seña detectada.
-
-**Request:**
-```
-Content-Type: multipart/form-data
-Body: { file: <imagen JPEG como Blob> }
-```
-
-**Response:**
-```json
-{
-  "prediction": "Hola",
-  "confidence": 0.97
-}
+```powershell
+& .\.venv-lstm\Scripts\python.exe .\scripts\train_from_manual.py `
+  --sequence-length 30 `
+  --epochs 60 `
+  --batch-size 16 `
+  --train-ratio 0.8 `
+  --min-sequences-per-label 2
 ```
 
----
+## 5) Reiniciar y probar
 
-### `POST /tts`
+Despues de entrenar:
 
-Recibe texto y devuelve audio MP3.
+1. Deten backend/frontend si estan corriendo.
+2. Ejecuta de nuevo:
 
-**Request:**
-```json
-{
-  "text": "Hola Gracias",
-  "speed": 1.0
-}
+```powershell
+.\start-signly.ps1
 ```
 
-**Response:**
-```
-Content-Type: audio/mpeg
-Body: <bytes del audio>
-```
+3. Ve a la pestana `Traducir` y prueba tus nuevas palabras.
 
-> En modo mock el TTS usa la Web Speech API del navegador directamente, sin llamar al backend.
+## 6) Como decide que palabras reconoce
 
----
+El backend carga:
 
-## Flujo de la app
+1. Modelo:
+   - `external/ActionDetectionforSignLanguage/action.h5`
+2. Etiquetas:
+   - `external/ActionDetectionforSignLanguage/action_labels.json`
 
-```
-Webcam → useCamera (captura frame JPEG)
-       → usePredict (POST /predict cada 800ms)
-       → App (debounce 1.2s, forma oración)
-       → TranslationPanel (muestra resultado)
-       → TTSControls (POST /tts o Web Speech API)
-```
+Si no existe `action_labels.json`, usa etiquetas por defecto en:
+- `model/predict.py` (`DEFAULT_ACTIONS`)
 
----
+## 7) Endpoints backend
 
-## Scripts disponibles
+- `POST /predict`: recibe frame y devuelve prediccion
+- `POST /teach`: guarda frame etiquetado en dataset manual
+- `POST /tts`: audio de salida
 
-| Comando | Descripción |
-|---|---|
-| `npm run dev` | Servidor de desarrollo con HMR |
-| `npm run build` | Build de producción en `/dist` |
-| `npm run preview` | Preview del build de producción |
+## 8) Notas practicas para mejor entrenamiento
 
----
-
-## Notas para el equipo
-
-- El proxy de Vite (`vite.config.js`) redirige `/predict` y `/tts` a `localhost:8000` automáticamente en desarrollo, así no hay problemas de CORS.
-- Al pasar a producción, el backend debe configurar CORS o servir el frontend desde el mismo origen.
-- El campo `confidence` en `/predict` es opcional por ahora — si el backend no lo incluye, simplemente no se muestra el badge de porcentaje.
-- Para agregar nuevas señas al mock, edita el array `MOCK_SIGNS` en `src/services/api.js`.
+- Mantener iluminacion estable.
+- Mantener mano/cuerpo centrados.
+- Grabar cada palabra desde varios angulos.
+- Evitar mezclar dos palabras distintas en el mismo lote.
+- Balancear cantidad de muestras por etiqueta.

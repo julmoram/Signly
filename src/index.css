@@ -442,3 +442,103 @@ html, body, #root {
 }
 .btn-clear:hover:not(:disabled)  { background: rgba(248,113,113,0.1); color: var(--red); border-color: var(--red); }
 .btn-clear:disabled               { opacity: 0.3; cursor: not-allowed; }
+
+/* Tabs */
+.tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.tab-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: rgba(167,139,250,0.2);
+  color: var(--accent2);
+}
+
+/* Teach panel */
+.teach-panel {
+  overflow: hidden;
+}
+
+.teach-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.teach-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.teach-field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text3);
+  text-transform: uppercase;
+}
+
+.teach-input {
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 9px 10px;
+  font-size: 13px;
+  outline: none;
+}
+
+.teach-input:focus {
+  border-color: var(--accent);
+}
+
+.teach-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.teach-meta {
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.teach-meta-row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text2);
+  font-size: 12px;
+}
+
+.teach-message {
+  color: var(--text2);
+  font-size: 12px;
+}
+
+.teach-footer-note {
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}

@@ -50,6 +50,26 @@ export async function tts(text, speed = 1.0) {
   return await res.blob()
 }
 
+// Sube un frame etiquetado para entrenamiento.
+// Request multipart: { file, label }
+export async function teachSample(blob, label) {
+  const safeLabel = (label || '').trim()
+  if (!safeLabel) throw new Error('label is required')
+
+  if (USE_MOCK) {
+    await delay(120)
+    return { ok: true, label: safeLabel, count: 1, mock: true }
+  }
+
+  const form = new FormData()
+  form.append('file', blob, 'sample.jpg')
+  form.append('label', safeLabel)
+
+  const res = await fetch('/teach', { method: 'POST', body: form })
+  if (!res.ok) throw new Error(`/teach error ${res.status}`)
+  return await res.json()
+}
+
 // ─── Util ─────────────────────────────────────────────────────────
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms))
